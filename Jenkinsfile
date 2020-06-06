@@ -10,7 +10,7 @@ pipeline {
 		 stage('Build docker image as hellomohesh') {
             		steps {
                 		script {
-                    			app = docker.build(moheshchandran/hellomohesh)
+                    			app = docker.build("moheshchandran/hellomohesh")
                     			app.inside {
                         			sh 'echo Hello, Mohesh!'
                     			}
