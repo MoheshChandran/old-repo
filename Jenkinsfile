@@ -31,7 +31,7 @@ pipeline {
 		
 				 stage('Deploy blue & Green container') {
 				steps {
-					  sshagent(['Project']) {
+					  sshagent(['my-ssh-key']) {
 						 sh "scp -o StrictHostKeyChecking=no  blue-controller.yaml green-controller.yaml blue-service.yaml ec2-user@13.251.110.131:/home/ec2-user/"
 						 script{
 							try{
@@ -52,7 +52,7 @@ pipeline {
 		
 		stage('Create the service in the cluster, redirect to green') {
 				steps {
-				  sshagent(['Project']) {
+				  sshagent(['my-ssh-key']) {
 					 sh "scp -o StrictHostKeyChecking=no  green-service.yaml ec2-user@13.251.110.131:/home/ec2-user/run/"
 					 script{
 						try{
