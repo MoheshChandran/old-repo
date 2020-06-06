@@ -29,5 +29,42 @@ pipeline {
 				}
 		}
 		
+				 stage('Deploy blue & Green container') {
+				steps {
+					  sshagent(['Project']) {
+						 sh "scp -o StrictHostKeyChecking=no  blue-controller.yaml green-controller.yaml blue-service.yaml ec2-user@13.251.110.131:/home/ec2-user/"
+						 script{
+							try{
+							sh "ssh ec2-user@13.251.110.131 sudo kubectl apply -f ."
+					 }catch(error){
+							sh "ssh ec2-user@13.251.110.131 sudo kubectl create -f ."
+									  }
+						}
+					 }
+			   }
+        }
+		
+		stage('Wait user approve') {
+            steps {
+                input "Ready to redirect traffic to green?"
+            }
+        }
+		
+		stage('Create the service in the cluster, redirect to green') {
+				steps {
+				  sshagent(['Project']) {
+					 sh "scp -o StrictHostKeyChecking=no  green-service.yaml ec2-user@13.251.110.131:/home/ec2-user/run/"
+					 script{
+						try{
+						sh "ssh ec2-user@13.251.110.131 sudo kubectl apply -f ."
+				 }catch(error){
+						sh "ssh ec2-user@13.251.110.131 sudo kubectl create -f ."
+								  }
+					}
+				 }
+				}
+		}
+
+		
      }
 }
