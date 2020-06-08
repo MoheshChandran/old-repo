@@ -5,7 +5,7 @@ pipeline {
         K8S_CONFIG_FILE = credentials('k8s-config-file')
         ROLE = 'blue'
 
-        CI_IMAGE = "moheshchandran/hellomohesh:latest"
+        CI_IMAGE = "moheshchandran/hellomohesh"
     }
 
     stages {
@@ -13,7 +13,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
+                    app = docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
                 }
             }
         }
@@ -21,7 +21,9 @@ pipeline {
         stage('Publish') {
             steps {
                 script {
-                    docker.image("$CI_IMAGE").push()
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerlogin') {
+                    app.push("${env.BUILD_NUMBER}")
+                    app.push("latest")
                 }
             }
         }
