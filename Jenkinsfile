@@ -9,13 +9,6 @@ pipeline {
     }
 
     stages {
-        stage('Setup') {
-            steps {
-                script {
-                    docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
-                }
-            }
-        }
 
         stage('Build') {
             steps {
