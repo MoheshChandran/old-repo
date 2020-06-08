@@ -32,12 +32,12 @@ pipeline {
 				 stage('Deploy blue & Green container') {
 				steps {
 					  sshagent(['my-ssh-key']) {
-						 sh "scp -o StrictHostKeyChecking=no  blue-controller.yaml green-controller.yaml blue-service.yaml ec2-user@13.251.43.16:/home/ec2-user/"
+						 sh "scp -o StrictHostKeyChecking=no  blue-controller.yaml green-controller.yaml blue-service.yaml ubuntu@172.31.0.68"
 						 script{
 							try{
-							sh "ssh ec2-user@13.251.43.16 sudo kubectl apply -f ."
+							sh "ssh ubuntu@172.31.0.68 sudo kubectl apply -f ."
 					 }catch(error){
-							sh "ssh ec2-user@13.251.43.16 sudo kubectl create -f ."
+							sh "ssh ubuntu@172.31.0.68 sudo kubectl create -f ."
 									  }
 						}
 					 }
@@ -53,12 +53,12 @@ pipeline {
 		stage('Create the service in the cluster, redirect to green') {
 				steps {
 				  sshagent(['my-ssh-key']) {
-					 sh "scp -o StrictHostKeyChecking=no  green-service.yaml ec2-user@13.251.43.16:/home/ec2-user/run/"
+					 sh "scp -o StrictHostKeyChecking=no  green-service.yaml ubuntu@172.31.0.68"
 					 script{
 						try{
-						sh "ssh ec2-user@13.251.43.16 sudo kubectl apply -f ."
+						sh "ssh ubuntu@172.31.0.68 sudo kubectl apply -f ."
 				 }catch(error){
-						sh "ssh ec2-user@13.251.43.16 sudo kubectl create -f ."
+						sh "ssh ubuntu@172.31.0.68 sudo kubectl create -f ."
 								  }
 					}
 				 }
