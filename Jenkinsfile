@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        K8S_CONFIG_FILE = 'k8s-config-file'
+        K8S_CONFIG_FILE = credentials('k8s-config-file')
         ROLE = 'blue'
 
         CI_IMAGE = "moheshchandran/hellomohesh"
