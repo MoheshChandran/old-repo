@@ -1,70 +1,70 @@
 pipeline {
-     agent any
-     stages {
-		 stage('Lint HTML') {
-              steps {
-                  sh 'tidy -q -e *.html'
-              }
-         }
-		 
-		 stage('Build docker image as hellomohesh') {
-            		steps {
-                		script {
-                    			app = docker.build("moheshchandran/hellomohesh")
-                    			app.inside {
-                        			sh 'echo Hello, Mohesh!'
-                    			}
-                		}
-            		}
-		}
-		
-		 stage('Push Docker Image') {
-				steps {
-					script {
-							docker.withRegistry('https://registry.hub.docker.com', 'dockerlogin') {
-							app.push("${env.BUILD_NUMBER}")
-							app.push("latest")
-							}
-					}
-				}
-		}
-		
-				 stage('Deploy blue & Green container') {
-				steps {
-					  sshagent(['my-ssh-key']) {
-						 sh "scp -o StrictHostKeyChecking=no  blue-controller.yaml green-controller.yaml blue-service.yaml ec2-user@13.251.43.16:/home/ec2-user/"
-						 script{
-							try{
-							sh "ssh ec2-user@13.251.43.16 sudo kubectl apply -f ."
-					 }catch(error){
-							sh "ssh ec2-user@13.251.43.16 sudo kubectl create -f ."
-									  }
-						}
-					 }
-			   }
-        }
-		
-		stage('Wait user approve') {
+    agent any
+
+    environment {
+        K8S_CONFIG_FILE = credentials('k8s-config-file')
+        ROLE = 'blue'
+
+        DOCKER_USER = "moheshchandran"
+        NGINX_IMAGE = "$DOCKER_USER/capstone-nginx:$ROLE"
+        FLASK_IMAGE = "$DOCKER_USER/capstone-flask:$ROLE"
+        CI_IMAGE = "$DOCKER_USER/capstone-flask:ci"
+    }
+
+    stages {
+        stage('Setup') {
             steps {
-                input "Ready to redirect traffic to green?"
+                script {
+                    docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/flask/ci/Dockerfile .")
+                }
             }
         }
-		
-		stage('Create the service in the cluster, redirect to green') {
-				steps {
-				  sshagent(['my-ssh-key']) {
-					 sh "scp -o StrictHostKeyChecking=no  green-service.yaml ec2-user@13.251.43.16:/home/ec2-user/run/"
-					 script{
-						try{
-						sh "ssh ec2-user@13.251.43.16 sudo kubectl apply -f ."
-				 }catch(error){
-						sh "ssh ec2-user@13.251.43.16 sudo kubectl create -f ."
-								  }
-					}
-				 }
-				}
-		}
 
-		
-     }
+        stage('Linting') {
+            steps {
+                script {
+                    docker.image("$CI_IMAGE").withRun { c ->
+                        sh "docker exec -i ${c.id} python -m flake8 ."
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    docker.build("$NGINX_IMAGE", "-f ./infra/docker/$ROLE/nginx/Dockerfile .")
+                    docker.build("$FLASK_IMAGE", "-f ./infra/docker/$ROLE/flask/Dockerfile .")
+                }
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                script {
+                    docker.image("$NGINX_IMAGE").push()
+                    docker.image("$FLASK_IMAGE").push()
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withAWS(credentials: 'aws-creds', region: 'ap-southeast-1') {
+                    sh """
+                    kubectl apply --kubeconfig=${K8S_CONFIG_FILE} \
+                        -f ./infra/k8s/deployments/${ROLE}.yaml \
+                        -f ./infra/k8s/services/${ROLE}.yaml
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: "reports/web/**/*", allowEmptyArchive: true, fingerprint: true
+            junit "reports/junit/**/*.xml"
+        }
+    }
 }
