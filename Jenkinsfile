@@ -5,27 +5,17 @@ pipeline {
         K8S_CONFIG_FILE = credentials('k8s-config-file')
         ROLE = 'blue'
 
-        DOCKER_USER = "moheshchandran"
-        NGINX_IMAGE = "$DOCKER_USER/capstone-nginx:$ROLE"
-        FLASK_IMAGE = "$DOCKER_USER/capstone-flask:$ROLE"
-        CI_IMAGE = "$DOCKER_USER/capstone-flask:ci"
+        CI_IMAGE = "moheshchandran/hellomohesh:latest"
     }
 
     stages {
         stage('Setup') {
             steps {
                 script {
-                    docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/flask/ci/Dockerfile .")
-                }
-            }
-        }
-
-        stage('Linting') {
-            steps {
-                script {
-                    docker.image("$CI_IMAGE").withRun { c ->
-                        sh "docker exec -i ${c.id} python -m flake8 ."
-                    }
+                    docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
+					app = docker.build(DOCKER_IMAGE_NAME)
+                    			app.inside {
+                        			sh 'echo Hello, Nginx!'
                 }
             }
         }
@@ -33,8 +23,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    docker.build("$NGINX_IMAGE", "-f ./infra/docker/$ROLE/nginx/Dockerfile .")
-                    docker.build("$FLASK_IMAGE", "-f ./infra/docker/$ROLE/flask/Dockerfile .")
+                    docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
                 }
             }
         }
@@ -42,8 +31,7 @@ pipeline {
         stage('Publish') {
             steps {
                 script {
-                    docker.image("$NGINX_IMAGE").push()
-                    docker.image("$FLASK_IMAGE").push()
+                    docker.image("$CI_IMAGE").push()
                 }
             }
         }
@@ -68,3 +56,5 @@ pipeline {
         }
     }
 }
+
+
