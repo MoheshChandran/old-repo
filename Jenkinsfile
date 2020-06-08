@@ -13,9 +13,6 @@ pipeline {
             steps {
                 script {
                     docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
-					app = docker.build(DOCKER_IMAGE_NAME)
-                    			app.inside {
-                        			sh 'echo Hello, Nginx!'
                 }
             }
         }
@@ -48,13 +45,4 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            archiveArtifacts artifacts: "reports/web/**/*", allowEmptyArchive: true, fingerprint: true
-            junit "reports/junit/**/*.xml"
-        }
-    }
 }
-
-
