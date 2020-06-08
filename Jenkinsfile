@@ -4,21 +4,26 @@ pipeline {
     environment {
         K8S_CONFIG_FILE = credentials('k8s-config-file')
         ROLE = 'blue'
-
-        CI_IMAGE = "moheshchandran/hellomohesh"
+        DOCKER_IMAGE = "moheshchandran/hellomohesh"
     }
 
     stages {
 
-        stage('Build') {
+	    stage('Lint HTML') {
+			steps {
+				sh 'tidy -q -e *.html'
+			}
+		}
+		
+        stage('Build Docker Image') {
             steps {
                 script {
-                    app = docker.build("$CI_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
+                    app = docker.build("$DOCKER_IMAGE", "-f ./infra/docker/$ROLE/Dockerfile .")
                 }
             }
         }
 
-        stage('Publish') {
+        stage('Push Docker Image') {
             steps {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerlogin') {
@@ -29,7 +34,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Container') {
             steps {
                 withAWS(credentials: 'aws-creds', region: 'ap-southeast-1') {
                     sh """
