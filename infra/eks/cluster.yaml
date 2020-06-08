@@ -2,7 +2,7 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: capstone-cluster
+  name: mohesh-eks-cluster
   region: ap-southeast-1
 
 managedNodeGroups:
