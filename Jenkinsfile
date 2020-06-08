@@ -5,7 +5,7 @@ pipeline {
         K8S_CONFIG_FILE = credentials('k8s-config-file')
         ROLE = 'blue'
 
-        CI_IMAGE = "moheshchandran/hellomohesh:latest"
+        CI_IMAGE = "moheshchandran/hellomohesh"
     }
 
     stages {
